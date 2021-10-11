@@ -4,5 +4,9 @@ class Scan:
         self.name = name
         self.points = []
 
-    def add_point_to_scan(self, point: Point):
+    def __len__(self):
+        return len(self.points)
+
+    def add_point_to_scan(self, point):
         self.points.append(point)
+
