@@ -3,8 +3,8 @@ import os.path
 import pickle
 import matplotlib.pyplot as plt
 
-from Point import *
 from Scan import *
+
 
 class ScanUtils:
 
@@ -12,7 +12,7 @@ class ScanUtils:
     def parse_xyz_points_from_file(scan: Scan, path_to_file: str):
         with open(path_to_file, "r") as file:
             for line in file:
-                point = Point(*[float(l) for l in line.strip().split(" ")])
+                point = Point(*[float(lst) for lst in line.strip().split(" ")])
                 scan.add_point_to_scan(point)
 
     @staticmethod
@@ -27,7 +27,7 @@ class ScanUtils:
             return pickle.load(f)
 
     @staticmethod
-    def plot_scan(scan: Scan, max_point_count=5_000):
+    def plot_scan(scan: Scan, max_point_count=10_000):
 
         x_lst, y_lst, z_lst = [], [], []
         step = int(len(scan) / max_point_count)
@@ -38,5 +38,5 @@ class ScanUtils:
 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-        ax.scatter(x_lst, y_lst, z_lst, cmap=",")
+        ax.scatter(x_lst, y_lst, z_lst, marker="+")
         plt.show()

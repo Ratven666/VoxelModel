@@ -2,7 +2,7 @@ class Point:
 
     total_count_point = 0
 
-    def __init__(self, x: float, y: float, z: float):
+    def __init__(self, x: float, y: float, z=0.0):
         Point.total_count_point += 1
 
         self.x = x
