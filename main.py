@@ -1,7 +1,5 @@
-from Scan import *
-from Point import *
-from ScanUtils import *
-from VoxelModel import *
+from scanprocessing.utils.ScanUtils import *
+from scanprocessing.classes.VoxelModel import *
 
 p1 = Point(1.2, 2.2, 3.4)
 p2 = Point(2, 4, 5)

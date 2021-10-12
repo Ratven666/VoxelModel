@@ -1,4 +1,4 @@
-from Point import *
+from scanprocessing.classes.Point import *
 
 
 class Scan:

@@ -1,5 +1,5 @@
-from Scan import *
-from VoxelLevels import *
+from scanprocessing.classes.Scan import *
+from scanprocessing.classes.VoxelLevels import *
 
 
 class Voxel:

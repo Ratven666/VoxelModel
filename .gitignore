@@ -8,4 +8,4 @@ __pycache__/
 
 *.txt
 
-saved_scan/15_yash.pkl_scan
+saved_scan/*

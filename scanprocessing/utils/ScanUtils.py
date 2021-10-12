@@ -3,7 +3,7 @@ import os.path
 import pickle
 import matplotlib.pyplot as plt
 
-from Scan import *
+from scanprocessing.classes.Scan import *
 
 
 class ScanUtils:

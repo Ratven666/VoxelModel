@@ -1,7 +1,7 @@
-from Voxel import *
-from VoxelLevels import *
+from scanprocessing.classes.Voxel import *
+from scanprocessing.classes.VoxelLevels import *
 
-from Point import *
+from scanprocessing.classes.Point import *
 
 
 class VoxelModel:
