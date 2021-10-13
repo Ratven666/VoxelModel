@@ -7,13 +7,17 @@ scan = sp.Scan("15_sandbox")
 #
 # sp.ScanUtils.dump_scan(scan)
 
-scan = sp.utils.ScanUtils.load_scan("saved_scan\\15_sandbox.pkl_scan")
+scan = sp.ScanUtils.load_scan("saved_scan\\15_sandbox.pkl_scan")
 
-sp.ScanUtils.plot_scan(scan)
+# sp.ScanUtils.plot_scan(scan)
 
 print(scan)
 #
-# vxl_md = sp.VoxelModel(scan)
-#
-# print(vxl_md)
-# print(len(vxl_md))
+vxl_md = sp.VoxelModel(scan, vxl_lvl=sp.VoxelLevels.LEVELS["level_4"])
+
+
+print(vxl_md)
+
+vxl_md.calc_vxl_planes()
+
+sp.VoxelUtils.plot_scan(vxl_md)

@@ -19,27 +19,25 @@ class VoxelModel:
     def __len__(self):
         return len(self.vxl_model) * len(self.vxl_model[0])
 
-    def __calc_vxl_md_bord(self):  # !!!! Сделать проверку на отсутствие inf в координатах границ скана !!!!
-        return {"lower_left": Voxel(Point(self.scan.borders["lower_left"].x // self.vxl_step * self.vxl_step,
-                                          self.scan.borders["lower_left"].y // self.vxl_step * self.vxl_step),
-                                    self.vxl_lvl),
-                "upper_left": Voxel(Point(self.scan.borders["upper_left"].x // self.vxl_step * self.vxl_step,
-                                          self.scan.borders["upper_left"].y // self.vxl_step * self.vxl_step),
-                                    self.vxl_lvl),
-                "upper_right": Voxel(Point(self.scan.borders["upper_right"].x // self.vxl_step * self.vxl_step,
-                                           self.scan.borders["upper_right"].y // self.vxl_step * self.vxl_step),
-                                     self.vxl_lvl),
-                "lower_right": Voxel(Point(self.scan.borders["lower_right"].x // self.vxl_step * self.vxl_step,
-                                           self.scan.borders["lower_right"].y // self.vxl_step * self.vxl_step),
-                                     self.vxl_lvl)
+    def __calc_vxl_md_bord(self):
+        # !!!! Сделать проверку на отсутствие inf в координатах границ скана !!!!
+        x0 = self.scan.borders["lower_left"].x // self.vxl_step * self.vxl_step
+        y0 = self.scan.borders["lower_left"].y // self.vxl_step * self.vxl_step
+
+        x_max = self.scan.borders["upper_right"].x // self.vxl_step * (self.vxl_step + 1)
+        y_max = self.scan.borders["upper_right"].y // self.vxl_step * (self.vxl_step + 1)
+        return {"lower_left": Point(x0, y0),
+                "upper_left": Point(x0, y_max),
+                "upper_right": Point(x_max, y_max),
+                "lower_right": Point(x_max, y0)
                 }
 
     def __create_vxl_struct(self):
-        x_start = self.borders["lower_left"].lower_left_point.x
-        y_start = self.borders["lower_left"].lower_left_point.y
+        x_start = self.borders["lower_left"].x
+        y_start = self.borders["lower_left"].y
 
-        x_stop = self.borders["upper_right"].lower_left_point.x
-        y_stop = self.borders["upper_right"].lower_left_point.y
+        x_stop = self.borders["upper_right"].x
+        y_stop = self.borders["upper_right"].y
 
         x_count = int((x_stop - x_start) / self.vxl_step)
         y_count = int((y_stop - y_start) / self.vxl_step)
@@ -48,11 +46,32 @@ class VoxelModel:
                  for x in range(x_count + 1)] for y in range(y_count + 1)]
 
     def __separate_scan_to_vxl(self):
-        x_start = self.borders["lower_left"].lower_left_point.x
-        y_start = self.borders["lower_left"].lower_left_point.y
+        x_start = self.borders["lower_left"].x
+        y_start = self.borders["lower_left"].y
 
         for point in self.scan.points:
             x, y = point.x, point.y
             vxl_md_X = int((x-x_start) // self.vxl_step)
             vxl_md_Y = int((y-y_start) // self.vxl_step)
             self.vxl_model[vxl_md_Y][vxl_md_X].scan.add_point_to_scan(point)
+
+    def calc_vxl_planes(self):
+        for vxl_row in self.vxl_model:
+            for vxl in vxl_row:
+                vxl.plane = Plane.fit_plane_to_point_arr(vxl.scan)
+                vxl.update_vxl_z_borders()
+
+        # На всякий случай
+        # return {"lower_left": Voxel(Point(self.scan.borders["lower_left"].x // self.vxl_step * self.vxl_step,
+        #                                   self.scan.borders["lower_left"].y // self.vxl_step * self.vxl_step),
+        #                             self.vxl_lvl),
+        #         "upper_left": Voxel(Point(self.scan.borders["upper_left"].x // self.vxl_step * self.vxl_step,
+        #                                   self.scan.borders["upper_left"].y // self.vxl_step * self.vxl_step),
+        #                             self.vxl_lvl),
+        #         "upper_right": Voxel(Point(self.scan.borders["upper_right"].x // self.vxl_step * self.vxl_step,
+        #                                    self.scan.borders["upper_right"].y // self.vxl_step * self.vxl_step),
+        #                              self.vxl_lvl),
+        #         "lower_right": Voxel(Point(self.scan.borders["lower_right"].x // self.vxl_step * self.vxl_step,
+        #                                    self.scan.borders["lower_right"].y // self.vxl_step * self.vxl_step),
+        #                              self.vxl_lvl)
+        #         }
