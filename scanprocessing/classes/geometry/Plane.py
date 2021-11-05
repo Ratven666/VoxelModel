@@ -54,8 +54,8 @@ class Plane:
 
         temp_plane = Plane(0, 0, 0, 0)
         temp_plane.number_of_points = len(scan.points)
-        temp_plane.a = abc[0]
-        temp_plane.b = abc[1]
-        temp_plane.c = -1
-        temp_plane.d = abc[2]
+        temp_plane.a = float(abc[0])
+        temp_plane.b = float(abc[1])
+        temp_plane.c = -1.0
+        temp_plane.d = float(abc[2])
         return temp_plane

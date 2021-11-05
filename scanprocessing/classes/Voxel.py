@@ -1,4 +1,4 @@
-from scanprocessing.classes.Plane import *
+from scanprocessing.classes.geometry.Plane import *
 from scanprocessing.classes.VoxelLevels import *
 
 
@@ -13,6 +13,7 @@ class Voxel:
                     f"Y{round(self.lower_left_point.y, 2)}"
         self.scan = Scan(f"Scan_{self.name}")
         self.plane = None
+        self.errors = None
 
         self.sub_voxel_model = None
 
@@ -35,7 +36,6 @@ class Voxel:
     def update_vxl_z_borders(self):
         if self.plane is None:
             return
-
         a = self.plane.a
         b = self.plane.b
         d = self.plane.d

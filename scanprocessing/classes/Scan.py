@@ -1,4 +1,4 @@
-from scanprocessing.classes.Point import *
+from scanprocessing.classes.geometry.Point import *
 
 
 class Scan:
@@ -11,6 +11,9 @@ class Scan:
                         "upper_right": Point(-float("inf"), -float("inf")),
                         "lower_right": Point(float("inf"), -float("inf"))
                         }
+
+    def __iter__(self):
+        return self.points
 
     def __len__(self):
         return len(self.points)

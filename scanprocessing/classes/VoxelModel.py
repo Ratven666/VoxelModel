@@ -1,7 +1,8 @@
+from scanprocessing.utils.ErrorsUtils import *
 from scanprocessing.classes.Voxel import *
 from scanprocessing.classes.VoxelLevels import *
 
-from scanprocessing.classes.Point import *
+from scanprocessing.classes.geometry.Point import *
 
 
 class VoxelModel:
@@ -20,12 +21,13 @@ class VoxelModel:
         return len(self.vxl_model) * len(self.vxl_model[0])
 
     def __calc_vxl_md_bord(self):
-        # !!!! Сделать проверку на отсутствие inf в координатах границ скана !!!!
+        if len(self.scan) == 0:
+            return None
         x0 = self.scan.borders["lower_left"].x // self.vxl_step * self.vxl_step
         y0 = self.scan.borders["lower_left"].y // self.vxl_step * self.vxl_step
 
-        x_max = self.scan.borders["upper_right"].x // self.vxl_step * (self.vxl_step + 1)
-        y_max = self.scan.borders["upper_right"].y // self.vxl_step * (self.vxl_step + 1)
+        x_max = (self.scan.borders["upper_right"].x // self.vxl_step + 1) * self.vxl_step
+        y_max = (self.scan.borders["upper_right"].y // self.vxl_step + 1) * self.vxl_step
         return {"lower_left": Point(x0, y0),
                 "upper_left": Point(x0, y_max),
                 "upper_right": Point(x_max, y_max),
@@ -60,6 +62,7 @@ class VoxelModel:
             for vxl in vxl_row:
                 vxl.plane = Plane.fit_plane_to_point_arr(vxl.scan)
                 vxl.update_vxl_z_borders()
+                vxl.errors = ErrorsUtils(vxl)
 
         # На всякий случай
         # return {"lower_left": Voxel(Point(self.scan.borders["lower_left"].x // self.vxl_step * self.vxl_step,
