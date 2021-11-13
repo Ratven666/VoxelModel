@@ -12,7 +12,8 @@ class ScanUtils:
     def parse_xyz_points_from_file(scan: Scan, path_to_file: str):
         with open(path_to_file, "r") as file:
             for line in file:
-                point = Point(*[float(lst) for lst in line.strip().split(" ")])
+                # point = Point(*[float(lst) for lst in line.strip().split(" ")])
+                point = Point(*[float(lst) * 3000 for lst in line.strip().split(" ")])
                 scan.add_point_to_scan(point)
 
     @staticmethod
@@ -30,7 +31,10 @@ class ScanUtils:
     def plot_scan(scan: Scan, max_point_count=10_000):
 
         x_lst, y_lst, z_lst = [], [], []
-        step = int(len(scan) / max_point_count)
+        if len(scan) < max_point_count:
+            step = 1
+        else:
+            step = int(len(scan) / max_point_count)
         for point in scan.points[::step]:
             x_lst.append(point.x)
             y_lst.append(point.y)
