@@ -60,7 +60,7 @@ class VoxelModel:
     def calc_vxl_planes(self):
         for vxl_row in self.vxl_model:
             for vxl in vxl_row:
-                vxl.plane = Plane.fit_plane_to_point_arr(vxl.scan)
+                vxl.plane = Plane.fit_plane_to_scan(vxl.scan)
                 vxl.update_vxl_z_borders()
                 vxl.errors = ErrorsUtils(vxl)
 

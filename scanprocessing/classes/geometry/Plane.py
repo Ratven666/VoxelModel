@@ -27,7 +27,7 @@ class Plane:
                     self.d) / (((self.a ** 2) + (self.b ** 2) + (self.c ** 2)) ** 0.5))
 
     @staticmethod
-    def fit_plane_to_point_arr(scan: Scan):
+    def fit_plane_to_scan(scan: Scan):
         if len(scan.points) < 3:
             return None
 

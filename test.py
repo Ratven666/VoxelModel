@@ -9,11 +9,11 @@ scan = sp.Scan("15_sandbox")
 
 scan = sp.ScanUtils.load_scan("saved_scan\\15_sandbox.pkl_scan")
 
-sp.ScanUtils.plot_scan(scan)
+sp.ScanUtils.plot_3d_scan(scan)
 
 print(scan)
 #
-vxl_md = sp.VoxelModel(scan, vxl_lvl=sp.VoxelLevels.LEVELS["level_100"])
+vxl_md = sp.VoxelModel(scan, vxl_lvl=sp.VoxelLevels.LEVELS["level_4"])
 
 
 print(vxl_md)
