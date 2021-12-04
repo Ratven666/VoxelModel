@@ -70,8 +70,8 @@ class VoxelUtils:
                 if e is None:
                     e = 0.0
                 y_line.append(e)
-            err.append(y_line)
-        err = np.array(err)
+            err.append(y_line[:-1])
+        err = np.array(err[:-1])
         # err = np.array([[x.errors.errors[name] for x in y] for y in vxl_mdl.vxl_model])
 
         fig, ax = plt.subplots()
@@ -82,19 +82,19 @@ class VoxelUtils:
 
 
         # We want to show all ticks...
-        ax.set_xticks(np.arange(len(x_list)))
-        ax.set_yticks(np.arange(len(y_list)))
+        ax.set_xticks(np.arange(len(x_list)-1))
+        ax.set_yticks(np.arange(len(y_list)-1))
         # ... and label them with the respective list entries
-        ax.set_xticklabels(x_list)
-        ax.set_yticklabels(y_list)
+        ax.set_xticklabels(x_list[:-1])
+        ax.set_yticklabels(y_list[:-1])
 
         # Rotate the tick labels and set their alignment.
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
                  rotation_mode="anchor")
 
         # Loop over data dimensions and create text annotations.
-        for i in range(len(y_list)):
-            for j in range(len(x_list)):
+        for i in range(len(y_list) -1):
+            for j in range(len(x_list) - 1):
                 text = ax.text(j, i, round(err[i, j], 1),
                                ha="center", va="center", color="w", fontsize="xx-small")
 
