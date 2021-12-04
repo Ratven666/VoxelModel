@@ -13,7 +13,7 @@ sp.ScanUtils.plot_scan(scan)
 
 print(scan)
 #
-vxl_md = sp.VoxelModel(scan, vxl_lvl=sp.VoxelLevels.LEVELS["level_100"])
+vxl_md = sp.VoxelModel(scan, vxl_lvl=sp.VoxelLevels.LEVELS["level_250"])
 
 
 print(vxl_md)

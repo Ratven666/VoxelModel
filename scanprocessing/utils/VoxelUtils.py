@@ -70,10 +70,11 @@ class VoxelUtils:
                 if e is None:
                     e = 0.0
                 y_line.append(e)
-            err.append(y_line)
-        err = np.array(err)
+            err.append(y_line[:-1])
+        err = np.array(err[:-1])
         # err = np.array([[x.errors.errors[name] for x in y] for y in vxl_mdl.vxl_model])
-
+        x_list.pop(-1)
+        y_list.pop(-1)
         fig, ax = plt.subplots()
         im = ax.imshow(err)
 
