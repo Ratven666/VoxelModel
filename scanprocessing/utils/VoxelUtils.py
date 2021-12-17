@@ -83,19 +83,19 @@ class VoxelUtils:
 
 
         # We want to show all ticks...
-        ax.set_xticks(np.arange(len(x_list)))
-        ax.set_yticks(np.arange(len(y_list)))
+        ax.set_xticks(np.arange(len(x_list)-1))
+        ax.set_yticks(np.arange(len(y_list)-1))
         # ... and label them with the respective list entries
-        ax.set_xticklabels(x_list)
-        ax.set_yticklabels(y_list)
+        ax.set_xticklabels(x_list[:-1])
+        ax.set_yticklabels(y_list[:-1])
 
         # Rotate the tick labels and set their alignment.
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
                  rotation_mode="anchor")
 
         # Loop over data dimensions and create text annotations.
-        for i in range(len(y_list)):
-            for j in range(len(x_list)):
+        for i in range(len(y_list) -1):
+            for j in range(len(x_list) - 1):
                 text = ax.text(j, i, round(err[i, j], 1),
                                ha="center", va="center", color="w", fontsize="xx-small")
 

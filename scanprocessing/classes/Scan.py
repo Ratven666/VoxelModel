@@ -22,6 +22,9 @@ class Scan:
         return f"Scan name = {self.name}\n\t" \
                f"point count = {len(self)}"
 
+    def __repr__(self):
+        return self.__str__()
+
     def add_point_to_scan(self, point: Point):
         self.points.append(point)
         self.__calk_scan_borders(point)
