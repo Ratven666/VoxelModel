@@ -21,6 +21,11 @@ class Project:
         "scans_table": """CREATE TABLE IF NOT EXISTS scans (
                             id INTEGER PRIMARY KEY,
                             name VARCHAR(255) UNIQUE NOT NULL,
+                            len INTEGER DEFAULT 0,
+                            min_X REAL DEFAULT NULL,
+                            max_X REAL DEFAULT NULL,
+                            min_Y REAL DEFAULT NULL,
+                            max_Y REAL DEFAULT NULL,
                             created_at DATETIME DEFAULT (DATETIME('now', 'localtime'))
                             );""",
 
@@ -69,3 +74,6 @@ class Project:
 
 if __name__ == "__main__":
     pr = Project("test")
+
+    with pr as p:
+        p.execute("""SELECT * FROM points""").fetchall()
