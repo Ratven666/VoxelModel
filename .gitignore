@@ -9,3 +9,5 @@ __pycache__/
 *.txt
 
 saved_scan/*
+
+data_bases/*
