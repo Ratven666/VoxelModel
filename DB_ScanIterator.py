@@ -1,7 +1,9 @@
 from DB_Scan import *
 from DB_Point import *
+from DB_Scan import *
 
-class ScanItterator:
+
+class ScanIterator:
 
     def __init__(self, scan: Scan):
         self.project = scan.project

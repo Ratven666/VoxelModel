@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 from DB_start import *
 from DB_Point import *
-from DB_ScanItterator import *
+# from DB_ScanIterator import *
 
 
 class Scan:
@@ -17,12 +17,25 @@ class Scan:
         # self.__calc_scan_metrics()
 
     def __iter__(self):
-        return iter(ScanItterator(self))
+        """Возвращает итератор последовательно выдающий объеты Point для всех точек скана"""
+        return iter(ScanIterator(self))
 
     def __len__(self):
         return self.len
 
+    @classmethod
+    def get_scan_from_id(cls, scan_id: int):
+        project = Project("")
+        with project as pr:
+            scan_data = pr.execute("""SELECT s.name FROM scans s WHERE s.id = (?)""", (scan_id,)).fetchone()
+        if scan_data is None or len(scan_data) == 0:
+            raise ValueError("Нет скана с таким id!!!")
+        return Scan(project, scan_data[0])
+
     def __init_scan(self):
+        """Проверяет присутствие скана с таким именем в БД
+                в случае наличия сохраняет данные из БД в объект
+                в случае отсутствия - создает новую запись в БД с именем скана"""
         with self.project as project:
             result = project.execute("""SELECT s.id, s.len, s.min_X, s.max_X,
                                                 s.min_Y, s.max_Y
@@ -37,7 +50,10 @@ class Scan:
                 self.borders = {"min_X": result[2], "max_X": result[3], "min_Y": result[4], "max_Y": result[5]}
             return scan_id
 
-    def __calc_scan_metrics(self):
+    def calc_scan_metrics(self):
+        """Рассчитывает основные метрики скана по существующим записям в БД
+            - количество точек,
+            - плановые границы скана"""
         with self.project as project:
             result = project.execute("""SELECT COUNT(p.id), MIN(p.X), MAX(p.X), MIN(p.Y), MAX(p.Y) FROM points p
                             JOIN points_scans ps ON ps.point_id = p.id
@@ -45,9 +61,13 @@ class Scan:
             self.len = result[0]
             self.borders = {"min_X": result[1], "max_X": result[2], "min_Y": result[3], "max_Y": result[4]}
 
-    def __update_scan_metrics_in_db(self):
+    def update_scan_metrics_in_db(self):
+        """Обновдяет значения метрик скана в БД на основании атрибутов объекта"""
         with self.project as project:
-            project.execute("""UPDATE scans SET 
+            if self.borders is None:
+                return
+            else:
+                project.execute("""UPDATE scans SET 
                                     len = (?),
                                     min_X = (?), max_X = (?),
                                     min_Y = (?), max_Y = (?) 
@@ -57,17 +77,30 @@ class Scan:
                                            self.scan_id))
 
     def add_point_to_scan(self, point: Point):
-        with self.project as project:
-            if len(pr.execute("""SELECT p.id FROM points p WHERE p.id = (?)""",
+        """
+        Добовляет точку в текущий скан
+        :param point: объект класса Point который добавляется в скан
+        :return:
+        """
+        with self.project as project:                             ##### Добавить проверку на присутствие точки в саомо скане!!!!
+            """Если в БД существует точка с id загружаемой точки:
+                    точка - не дублируется,
+                    создается запись в таблице points_scans указывающая на присутствие уже существующей точки в
+                    текущем скане"""
+            if len(project.execute("""SELECT p.id FROM points p WHERE p.id = (?)""",
                               (point.point_id, )).fetchone()) == 1:
                 project.execute("INSERT INTO points_scans (point_id, scan_id) VALUES (?, ?)",
                                 (point.point_id, self.scan_id))
             else:
+                """Если точки с таким id нет, то в БД ищется максимальный из записанных в ней id точек"""
                 last_point_id = project.execute("""SELECT id FROM points ORDER BY id DESC LIMIT 1 """).fetchone()
                 if last_point_id is None:
-                    point_id = 0
+                    point_id = 1
                 else:
+                    """Для точки пирнимается следующий за максималььным id"""
                     point_id = last_point_id[0] + 1
+                """В БД заносится запись о новой точке, создается запись в таблице points_scans 
+                    указывающая на присутствие новой точки в текущем скане"""
                 project.execute("""INSERT INTO points (X, Y, Z, R, G, B, nX, nY, nZ, id) 
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                                 (point.x, point.y, point.z,
@@ -76,14 +109,22 @@ class Scan:
                                  point_id))
                 project.execute("INSERT INTO points_scans (point_id, scan_id) VALUES (?, ?)",
                                 (point_id, self.scan_id))
+        """Увеличивается счетчик общего количества точек и выполняется проверка на изменение границ скана"""
         self.len += 1
-        if self.__update_borders(point):
-            self.__update_scan_metrics_in_db()
+        if self.update_borders(point):
+            self.update_scan_metrics_in_db()
 
-    def __update_borders(self, point: Point):
+    def update_borders(self, point: Point):
+        """
+        Проверяет ноходится ли проверяемая точка в существующих границах скана
+        :param point: точка для которой выполняется проверка
+        :return: bool вышла ли точка за существующие границы
+        """
         x, y = point.x, point.y
         update_flag = False
         if self.len == 1:
+            """Есди в скане всего одна точка то 
+            создается словарь границ, значения в котором принимаются равными координатам точки"""
             self.borders = {"min_X": x, "max_X": x, "min_Y": y, "max_Y": y}
             update_flag = True
             return update_flag
@@ -102,14 +143,18 @@ class Scan:
         return update_flag
 
     def parse_points_from_file(self, path_to_file: str, point_n=1000):
+        """Парсит файл с точками в БД"""
         with self.project as project:
+            """Проверяет был ли загружен уже этот файл в скан"""
+            ######  Выполнить проверку на присутствие конкретного файла в конкретном скане !!!!!!!!!!!!!!!
             file_flag = project.execute("""SELECT if.id FROM imported_files if WHERE if.name = (?)""",
                                     (path_to_file,)).fetchone()
             if file_flag is not None and len(file_flag) == 1:
-                print("Такой файл уже загружен!!!")
+                print("Такой файл уже загружен!!!")           #### Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 return
 
             def insert_data_to_db(points_lst: list, id_points_scan: list):
+                """Пакетно загружает в БД точки в таблицы points и points_scans"""
                 if len(points_lst[0]) == 4:
                     project.executemany("INSERT INTO points (X, Y, Z, id) VALUES (?, ?, ?, ?)", points_lst)
                 elif len(points_lst[0]) == 7:
@@ -146,8 +191,8 @@ class Scan:
                 except sqlite3.OperationalError:
                     pass
             project.execute("INSERT INTO imported_files (name, scan_id) VALUES (?, ?)", (path_to_file, self.scan_id))
-        self.__calc_scan_metrics()
-        self.__update_scan_metrics_in_db()
+        self.calc_scan_metrics()
+        self.update_scan_metrics_in_db()
 
     def plot(self, max_point_count=10_000):
         x_lst, y_lst, z_lst, c_lst = [], [], [], []
@@ -189,6 +234,37 @@ class Scan:
 
         plt.show()
 
+
+class ScanIterator:
+
+    def __init__(self, scan: Scan):
+        self.project = scan.project
+        self.scan_id = scan.scan_id
+        self.cursor = None
+        self.generator = None
+
+    def __iter__(self):
+        connection = self.project.sqlite_connection
+        self.cursor = connection.cursor()
+        self.generator = (Point.parse_point_from_db(data) for data in
+                          self.cursor.execute("""SELECT p.id, p.X, p.Y, p.Z,
+                                                    p.R, p.G, p.B,
+                                                    p.nX, p.nY, p.nZ
+                                                    FROM points p
+                                                    JOIN points_scans ps ON ps.point_id = p.id
+                                                    WHERE ps.scan_id = (?)""", (self.scan_id,)))
+        return self.generator
+
+    def __next__(self):
+        try:
+            return next(self.generator)
+        except StopIteration:
+            self.cursor.close()
+            raise StopIteration
+        finally:
+            self.cursor.close()
+
+
 if __name__ == "__main__":
     import time
 
@@ -198,9 +274,9 @@ if __name__ == "__main__":
     #     rez = pr.execute("SELECT s.id FROM scans s WHERE s.name = '1q'").fetchone()
     #     print(rez)
 
-    sc1 = Scan(pr, "15")
+    sc1 = Scan(pr, "KuchaRGB")
     t0 = time.time()
-    sc1.parse_points_from_file(os.path.join("src", "15.txt"))
+    sc1.parse_points_from_file(os.path.join("src", "KuchaRGB.txt"))
     print(time.time() - t0)
 
     # print(time.time() - t0)

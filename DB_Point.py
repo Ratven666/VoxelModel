@@ -13,7 +13,10 @@ class Point:
         self.normal = normal
 
     def __str__(self):
-        return f"Point id = {self.id}\n\tx = {self.x}\n\ty = {self.y}\n\tz = {self.z}"
+        return f"Point id = {self.point_id}\n\tx = {self.x}\n\ty = {self.y}\n\tz = {self.z}"
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     @classmethod
     def parse_point_from_db(cls, data: tuple):
