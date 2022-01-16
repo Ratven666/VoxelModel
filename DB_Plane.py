@@ -43,22 +43,11 @@ class Plane:
             cursor_inn.close()
         return plane_id
 
-    # def __update_plane_data_in_db(self):
-    #     """Обновдяет данные плоскости в БД на основании атрибутов объекта"""
-    #     connection = Project("").sqlite_connection
-    #     cursor_inn = connection.cursor()
-    #     try:
-    #         cursor_inn.execute("""UPDATE planes SET
-    #                                 len = (?),
-    #                                 A = (?), B = (?),
-    #                                 C = (?), D = (?)
-    #                                 WHERE id = (?)
-    #                                 ;""", (self.len, self.a, self.b,
-    #                                        self.c, self.d,
-    #                                        self.plane_id))
-    #     finally:
-    #         connection.commit()
-    #         cursor_inn.close()
+    def is_calculated(self):
+        if None in (self.a, self.b, self.c, self.d):
+            return False
+        else:
+            return True
 
     def __update_plane_data_in_db(self):
         """Обновдяет данные плоскости в БД на основании атрибутов объекта"""

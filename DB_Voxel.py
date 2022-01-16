@@ -1,6 +1,5 @@
-from DB_Point import *
-from DB_ScanIterator import *
-from DB_Scan import *
+from scipy.spatial import ConvexHull
+
 from DB_Plane import *
 
 
@@ -14,7 +13,6 @@ class Voxel:
                     f"X{round(self.lower_left_point.x, 3)}_" \
                     f"Y{round(self.lower_left_point.y, 3)}"
         self.scan = Scan(Project(""), f"SC_{self.name}")
-        self.plane_id = None
         self.id = self.__init_voxel()
         self.vxl_borders = self.__calk_voxel_borders()
         # self.errors = None
@@ -81,8 +79,21 @@ class Voxel:
                                          ?, ?, ?,
                                          ?, ?)""", data)
 
+    def vxl_volume(self, base_lvl=0):
+        plane = self.plane
+        if plane.is_calculated() is False:
+            return 0
+        a, b, d = plane.a, plane.b, plane.d
+        points = []
+        for point in self.vxl_borders.values():
+            x, y = point.x, point.y
+            z = a*x + b*y + d
+            points.append([x, y, z])
+            points.append([x, y, base_lvl])
+        return ConvexHull(points).volume
+
 
 if __name__ == "__main__":
     pr = Project("15")
-    v1 = Voxel(Point(0, 0.01), 0.1, vxl_mdl_id=1)
+    v1 = Voxel(Point(0, 0.05), 0.1, vxl_mdl_id=1)
     print(v1)

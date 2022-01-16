@@ -1,5 +1,7 @@
 from os import remove
 
+import matplotlib.pyplot as plt
+
 from DB_Voxel import *
 
 
@@ -112,6 +114,40 @@ class VoxelModel:
         for voxel in self:
             voxel.plane.fit_plane_to_scan(voxel.scan, force_fit)
 
+    def plot(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        for voxel in self:
+            plane = voxel.plane
+            if plane.is_calculated() is False:
+                continue
+
+            x0 = voxel.vxl_borders["lower_left"].x
+            y0 = voxel.vxl_borders["lower_left"].y
+            step = voxel.step
+            x_max = voxel.vxl_borders["upper_right"].x + step
+            y_max = voxel.vxl_borders["upper_right"].y + step
+
+            a = plane.a
+            b = plane.b
+            d = plane.d
+
+            X = np.arange(x0, x_max, step)
+            Y = np.arange(y0, y_max, step)
+            X, Y = np.meshgrid(X, Y)
+            Z = a * X + b * Y + d
+
+            ax.plot_surface(X, Y, Z, alpha=0.6)
+        plt.show()
+
+    def volume_calculation(self, base_lvl=0):
+        total_volume = 0
+        for voxel in self:
+            total_volume += voxel.vxl_volume(base_lvl)
+        return total_volume
+
+
     # def __separate_scan_to_vxl(self):
     #     x_start = self.borders["min_X"]
     #     y_start = self.borders["min_Y"]
@@ -211,14 +247,20 @@ if __name__ == "__main__":
     import time
     pr = Project("15")
     t0 = time.time()
-    sc1 = Scan(pr, "15")
+    sc1 = Scan(pr, "Kucha")
     print(time.time() - t0)
     t0 = time.time()
-    sc1.parse_points_from_file(os.path.join("src", "15.txt"))
+    sc1.parse_points_from_file(os.path.join("src", "KuchaRGB.txt"))
     print(time.time() - t0)
     t0 = time.time()
-    vm = VoxelModel(sc1, 0.1)
+    vm = VoxelModel(sc1, 5)
     print(time.time() - t0)
     t0 = time.time()
     vm.fit_planes_in_vxl(force_fit=False)
     print(time.time() - t0)
+    vm.plot()
+
+    t0 = time.time()
+    print("vol", vm.volume_calculation())
+    print(time.time() - t0)
+
