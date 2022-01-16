@@ -82,13 +82,13 @@ class Scan:
         :param point: объект класса Point который добавляется в скан
         :return:
         """
-        with self.project as project:                             ##### Добавить проверку на присутствие точки в саомо скане!!!!
+        with self.project as project:                             # Добавить проверку на присутствие точки в саомо скане!!!!
             """Если в БД существует точка с id загружаемой точки:
                     точка - не дублируется,
                     создается запись в таблице points_scans указывающая на присутствие уже существующей точки в
                     текущем скане"""
             if len(project.execute("""SELECT p.id FROM points p WHERE p.id = (?)""",
-                              (point.point_id, )).fetchone()) == 1:
+                                           (point.point_id, )).fetchone()) == 1:
                 project.execute("INSERT INTO points_scans (point_id, scan_id) VALUES (?, ?)",
                                 (point.point_id, self.scan_id))
             else:
@@ -146,11 +146,11 @@ class Scan:
         """Парсит файл с точками в БД"""
         with self.project as project:
             """Проверяет был ли загружен уже этот файл в скан"""
-            ######  Выполнить проверку на присутствие конкретного файла в конкретном скане !!!!!!!!!!!!!!!
+            #  Выполнить проверку на присутствие конкретного файла в конкретном скане !!!!!!!!!!!!!!!
             file_flag = project.execute("""SELECT if.id FROM imported_files if WHERE if.name = (?)""",
-                                    (path_to_file,)).fetchone()
+                                                                    (path_to_file,)).fetchone()
             if file_flag is not None and len(file_flag) == 1:
-                print("Такой файл уже загружен!!!")           #### Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                print("Такой файл уже загружен!!!")           # Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 return
 
             def insert_data_to_db(points_lst: list, id_points_scan: list):
@@ -296,5 +296,3 @@ if __name__ == "__main__":
     t0 = time.time()
     sc1.plot(25000)
     print(time.time() - t0)
-
-

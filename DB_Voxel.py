@@ -1,6 +1,7 @@
 from DB_Point import *
 from DB_ScanIterator import *
 from DB_Scan import *
+from DB_Plane import *
 
 
 class Voxel:
@@ -15,10 +16,7 @@ class Voxel:
         self.scan = Scan(Project(""), f"SC_{self.name}")
         self.plane_id = None
         self.id = self.__init_voxel()
-
         self.vxl_borders = self.__calk_voxel_borders()
-
-
         # self.errors = None
         #
         # self.sub_voxel_model = None
@@ -29,9 +27,9 @@ class Voxel:
     def __repr__(self):
         return self.name
 
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    @property
+    def plane(self):
+        return Plane(self.plane_id)
 
     def __init_voxel(self):
         with Project("") as project:
@@ -39,13 +37,18 @@ class Voxel:
                                                 v.step, v.plane_id, v.scan_id, v.vxl_mdl_id
                                                 FROM voxels v WHERE v.name = (?)""", (self.name,)).fetchone()
             if vxl_data is None or len(vxl_data) == 0:
-                vxl_id = project.execute("""INSERT INTO voxels (name, x0, y0, step, scan_id, vxl_mdl_id) VALUES
-                                                (?, ?, ?, ?, ?, ?)""", (self.name,
-                                                                        self.lower_left_point.x,
-                                                                        self.lower_left_point.y,
-                                                                        self.step,
-                                                                        self.scan.scan_id,
-                                                                        self.vxl_mdl_id)).lastrowid
+                plane = Plane()
+                self.plane_id = plane.plane_id
+                vxl_id = project.execute("""INSERT INTO voxels (name, x0, y0, step, 
+                                                                plane_id, scan_id, vxl_mdl_id) VALUES
+                                                                (?, ?, ?, ?, ?, ?, ?)""",
+                                                                 (self.name,
+                                                                  self.lower_left_point.x,
+                                                                  self.lower_left_point.y,
+                                                                  self.step,
+                                                                  plane.plane_id,
+                                                                  self.scan.scan_id,
+                                                                  self.vxl_mdl_id)).lastrowid
             else:
                 vxl_id = vxl_data[0]
                 self.name = vxl_data[1]

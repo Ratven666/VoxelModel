@@ -108,12 +108,16 @@ class VoxelModel:
         for voxel in self:
             voxel.scan.update_scan_metrics_in_db()
 
+    def fit_planes_in_vxl(self, force_fit=False):
+        for voxel in self:
+            voxel.plane.fit_plane_to_scan(voxel.scan, force_fit)
+
     # def __separate_scan_to_vxl(self):
     #     x_start = self.borders["min_X"]
     #     y_start = self.borders["min_Y"]
     #
-    #     connection = self.base_scan.project.sqlite_connection
-    #     cursor_inn = connection.cursor()
+        # connection = self.base_scan.project.sqlite_connection
+        # cursor_inn = connection.cursor()
     #     try:
     #         point_n = 100000
     #         id_point_scan = []
@@ -216,3 +220,5 @@ if __name__ == "__main__":
     vm = VoxelModel(sc1, 0.1)
     print(time.time() - t0)
     t0 = time.time()
+    vm.fit_planes_in_vxl(force_fit=False)
+    print(time.time() - t0)
