@@ -165,7 +165,7 @@ class Scan:
                                         (path_to_file, self.scan_id)).fetchone()
             if file_flag is not None and len(file_flag) == 1:
                 print("Такой файл уже загружен!!!")  # Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                return
+                return "Такой файл уже загружен!!!"
 
             def insert_data_to_db(points_lst: list, id_points_scan: list):
                 """Пакетно загружает в БД точки в таблицы points и points_scans"""
