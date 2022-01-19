@@ -147,10 +147,11 @@ class Scan:
         with self.project as project:
             """Проверяет был ли загружен уже этот файл в скан"""
             #  Выполнить проверку на присутствие конкретного файла в конкретном скане !!!!!!!!!!!!!!!
-            file_flag = project.execute("""SELECT if.id FROM imported_files if WHERE if.name = (?)""",
-                                                                    (path_to_file,)).fetchone()
+            file_flag = project.execute("""SELECT if.id FROM imported_files if WHERE if.name = (?)
+                                                                                                AND if.scan_id = (?)""",
+                                        (path_to_file, self.scan_id)).fetchone()
             if file_flag is not None and len(file_flag) == 1:
-                print("Такой файл уже загружен!!!")           # Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                print("Такой файл уже загружен!!!")  # Грязь!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 return
 
             def insert_data_to_db(points_lst: list, id_points_scan: list):

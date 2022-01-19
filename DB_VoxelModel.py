@@ -245,22 +245,25 @@ class VoxelModelIterator:
 
 if __name__ == "__main__":
     import time
-    pr = Project("15")
-    t0 = time.time()
+    pr = Project("Kucha")
+    # t0 = time.time()
     sc1 = Scan(pr, "Kucha")
-    print(time.time() - t0)
-    t0 = time.time()
+    # print(time.time() - t0)
+    # t0 = time.time()
     sc1.parse_points_from_file(os.path.join("src", "KuchaRGB.txt"))
-    print(time.time() - t0)
-    t0 = time.time()
-    vm = VoxelModel(sc1, 5)
-    print(time.time() - t0)
-    t0 = time.time()
+    #
+    # sc1.plot()
+    # print(time.time() - t0)
+    # t0 = time.time()
+    vm = VoxelModel(sc1, 2.5)
+    # print(time.time() - t0)
+    # t0 = time.time()
     vm.fit_planes_in_vxl(force_fit=False)
-    print(time.time() - t0)
+    # print(time.time() - t0)
     vm.plot()
-
-    t0 = time.time()
-    print("vol", vm.volume_calculation())
-    print(time.time() - t0)
+    #
+    # t0 = time.time()
+    print("vol", vm.volume_calculation(base_lvl=33))
+    # print(time.time() - t0)
+    # # sc1.plot()
 

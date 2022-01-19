@@ -10,8 +10,8 @@ class Voxel:
         self.step = step
         self.vxl_mdl_id = vxl_mdl_id
         self.name = f"VXL_VM{self.vxl_mdl_id}_s{self.step}_" \
-                    f"X{round(self.lower_left_point.x, 3)}_" \
-                    f"Y{round(self.lower_left_point.y, 3)}"
+                    f"X{round(self.lower_left_point.x, 5)}_" \
+                    f"Y{round(self.lower_left_point.y, 5)}"
         self.scan = Scan(Project(""), f"SC_{self.name}")
         self.id = self.__init_voxel()
         self.vxl_borders = self.__calk_voxel_borders()
