@@ -114,9 +114,12 @@ class VoxelModel:
         for voxel in self:
             voxel.plane.fit_plane_to_scan(voxel.scan, force_fit)
 
-    def plot(self):
+    def plot(self, true_scale=True):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
+
+        if true_scale is True:
+            self.base_scan._Scan__plot_limits(ax)
 
         for voxel in self:
             plane = voxel.plane
@@ -255,15 +258,17 @@ if __name__ == "__main__":
     # sc1.plot()
     # print(time.time() - t0)
     # t0 = time.time()
-    vm = VoxelModel(sc1, 2.5)
+
+    # vm = VoxelModel(sc1, 2.5)
+    vm = VoxelModel(sc1, 1)
+
     # print(time.time() - t0)
     # t0 = time.time()
     vm.fit_planes_in_vxl(force_fit=False)
     # print(time.time() - t0)
-    vm.plot()
+    vm.plot(true_scale=True)
     #
     # t0 = time.time()
     print("vol", vm.volume_calculation(base_lvl=33))
     # print(time.time() - t0)
     # # sc1.plot()
-

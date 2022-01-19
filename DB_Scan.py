@@ -38,7 +38,7 @@ class Scan:
                 в случае отсутствия - создает новую запись в БД с именем скана"""
         with self.project as project:
             result = project.execute("""SELECT s.id, s.len, s.min_X, s.max_X,
-                                                s.min_Y, s.max_Y
+                                                s.min_Y, s.max_Y, s.min_Z, s.max_Z
                                                 FROM scans s WHERE s.name = (?)""", (self.name,)).fetchone()
             if result is None or len(result) == 0:
                 scan_id = project.execute("""INSERT INTO scans (name) VALUES
@@ -47,7 +47,9 @@ class Scan:
             else:
                 scan_id = result[0]
                 self.len = result[1]
-                self.borders = {"min_X": result[2], "max_X": result[3], "min_Y": result[4], "max_Y": result[5]}
+                self.borders = {"min_X": result[2], "max_X": result[3],
+                                "min_Y": result[4], "max_Y": result[5],
+                                "min_Z": result[6], "max_Z": result[7]}
             return scan_id
 
     def calc_scan_metrics(self):
@@ -55,11 +57,14 @@ class Scan:
             - количество точек,
             - плановые границы скана"""
         with self.project as project:
-            result = project.execute("""SELECT COUNT(p.id), MIN(p.X), MAX(p.X), MIN(p.Y), MAX(p.Y) FROM points p
+            result = project.execute("""SELECT COUNT(p.id), MIN(p.X), MAX(p.X), MIN(p.Y), MAX(p.Y), MIN(p.Z), MAX(p.Z) 
+                            FROM points p
                             JOIN points_scans ps ON ps.point_id = p.id
                             WHERE ps.scan_id = (?)""", (self.scan_id,)).fetchone()
             self.len = result[0]
-            self.borders = {"min_X": result[1], "max_X": result[2], "min_Y": result[3], "max_Y": result[4]}
+            self.borders = {"min_X": result[1], "max_X": result[2],
+                            "min_Y": result[3], "max_Y": result[4],
+                            "min_Z": result[5], "max_Z": result[6]}
 
     def update_scan_metrics_in_db(self):
         """Обновдяет значения метрик скана в БД на основании атрибутов объекта"""
@@ -70,10 +75,12 @@ class Scan:
                 project.execute("""UPDATE scans SET 
                                     len = (?),
                                     min_X = (?), max_X = (?),
-                                    min_Y = (?), max_Y = (?) 
+                                    min_Y = (?), max_Y = (?),
+                                    min_Z = (?), max_Z = (?) 
                                     WHERE id = (?)
                                     ;""", (self.len, self.borders["min_X"], self.borders["max_X"],
                                            self.borders["min_Y"], self.borders["max_Y"],
+                                           self.borders["min_Z"], self.borders["max_Z"],
                                            self.scan_id))
 
     def add_point_to_scan(self, point: Point):
@@ -120,12 +127,12 @@ class Scan:
         :param point: точка для которой выполняется проверка
         :return: bool вышла ли точка за существующие границы
         """
-        x, y = point.x, point.y
+        x, y, z = point.x, point.y, point.z
         update_flag = False
         if self.len == 1:
             """Есди в скане всего одна точка то 
             создается словарь границ, значения в котором принимаются равными координатам точки"""
-            self.borders = {"min_X": x, "max_X": x, "min_Y": y, "max_Y": y}
+            self.borders = {"min_X": x, "max_X": x, "min_Y": y, "max_Y": y, "min_Z": z, "max_Z": z}
             update_flag = True
             return update_flag
         if x < self.borders["min_X"]:
@@ -139,6 +146,12 @@ class Scan:
             update_flag = True
         if y > self.borders["max_Y"]:
             self.borders["max_Y"] = y
+            update_flag = True
+        if z < self.borders["min_Z"]:
+            self.borders["min_Z"] = z
+            update_flag = True
+        if z > self.borders["max_Z"]:
+            self.borders["max_Z"] = z
             update_flag = True
         return update_flag
 
@@ -195,7 +208,7 @@ class Scan:
         self.calc_scan_metrics()
         self.update_scan_metrics_in_db()
 
-    def plot(self, max_point_count=10_000):
+    def plot(self, max_point_count=10_000, true_scale=True):
         x_lst, y_lst, z_lst, c_lst = [], [], [], []
         if len(self) < max_point_count:
             step = 1
@@ -214,9 +227,20 @@ class Scan:
             count += 1
             if count == step:
                 count = 0
-        min_x, min_y, min_z = self.borders["min_X"], self.borders["min_Y"], min(z_lst)
-        max_x, max_y, max_z = self.borders["max_X"], self.borders["max_Y"], max(z_lst)
 
+        px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
+        fig = plt.figure(figsize=(800 * px, 800 * px))
+        ax = fig.add_subplot(projection="3d")
+
+        if true_scale is True:
+            self.__plot_limits(ax)
+
+        ax.scatter(x_lst, y_lst, z_lst, c=c_lst, marker="+", s=2)
+        plt.show()
+
+    def __plot_limits(self, ax):
+        min_x, min_y, min_z = self.borders["min_X"], self.borders["min_Y"], self.borders["min_Z"]
+        max_x, max_y, max_z = self.borders["max_X"], self.borders["max_Y"], self.borders["max_Z"]
         limits = [max_x - min_x,
                   max_y - min_y,
                   max_z - min_z]
@@ -224,16 +248,9 @@ class Scan:
         x_lim = [((min_x + max_x)/2) - length, ((min_x + max_x)/2) + length]
         y_lim = [((min_y + max_y)/2) - length, ((min_y + max_y)/2) + length]
         z_lim = [((min_z + max_z)/2) - length, ((min_z + max_z)/2) + length]
-
-        px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
-        fig = plt.figure(figsize=(800 * px, 800 * px))
-        ax = fig.add_subplot(projection="3d")
         ax.set_xlim(*x_lim)
         ax.set_ylim(*y_lim)
         ax.set_zlim(*z_lim)
-        ax.scatter(x_lst, y_lst, z_lst, c=c_lst, marker="+", s=2)
-
-        plt.show()
 
 
 class ScanIterator:

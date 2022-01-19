@@ -46,6 +46,8 @@ class Project(metaclass=SingletonMeta):
                             max_X REAL DEFAULT NULL,
                             min_Y REAL DEFAULT NULL,
                             max_Y REAL DEFAULT NULL,
+                            min_Z REAL DEFAULT NULL,
+                            max_Z REAL DEFAULT NULL,
                             created_at DATETIME DEFAULT (DATETIME('now', 'localtime'))
                             );""",
 
