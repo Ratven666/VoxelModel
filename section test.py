@@ -1,35 +1,43 @@
 from DB_Section import *
 from DB_VoxelModel import *
 
+"""Создает базу данных с переданным названием ("Karier")"""
 pr = Project("Karier")
-#
+""" Создает объект скана sc с переданным названием ("Karier")"""
 sc = Scan(pr, "Karier")
-#
+"""Загружает данные точек из файла в скан sc - файл с точками "Karier.txt" лежит в папке "src")"""
 sc.parse_points_from_file(os.path.join("src", "Karier.txt"))
 
-# sc.plot(max_point_count=30000)
-#
-# vm = VoxelModel(sc, 10)
-# vm.fit_planes_in_vxl()
-# #
-# vm.plot()
-# #
+"""Выведет 3D модель исходного скана на экран (покажет 30000 точек от общего количества (можно менять))
+true_scale=True - реальный масштаб, true_scale=False - искаженный по высоте чтобы полностью заполнить ось z"""
+sc.plot(max_point_count=30000, true_scale=True)
+
+"""Создаются две точки p1 и p2 по координатам x и y"""
 p1 = Point(16495242, 6638571)
 p2 = Point(16495243, 6638970)
-#
-p3 = Point(0.07, 0.03)
-p4 = Point(0.03, -0.07)
-# #
-line = Line2D(p1, p2)
-line2 = Line2D(p3, p4)
-# #
-sec = Section(line, 20, sc)
-# sec2 = Section(line2, 0.02, sc)
-# #
-sec.strip_scan.plot(true_scale=True)
-sec.section_2d_scan.plot(true_scale=True)
-sec.plot(true_scale=True)
 
-# sec2.strip_scan.plot(true_scale=True)
-# sec2.section_2d_scan.plot(true_scale=True)
-# sec2.plot(true_scale=True)
+"""Создается отрезок по координатам точек p1 и p2"""
+line = Line2D(p1, p2)
+
+"""Создается сечение sec на основе созданного отрезка line по скану sc
+width - ширина полосы по которой будут проецироваться точки"""
+width = 5
+sec = Section(line, width, sc)
+
+""" Выведет 3D модель полосы скана от отрезка на экран (покажет 30000 точек от общего количества (можно менять)),
+true_scale=True - реальный масштаб, true_scale=False - искаженный по высоте чтобы полностью заполнить ось z"""
+sec.strip_scan.plot(max_point_count=30000, true_scale=True)
+
+""" Выведет 3D модель полосы скана от отрезка на экран (покажет 30000 точек от общего количества (можно менять)),
+true_scale=True - реальный масштаб, true_scale=False - искаженный по высоте чтобы полностью заполнить ось z"""
+sec.plot(max_point_count=30000, true_scale=True)
+
+"""Разделяет сечение на n частей, вписывает в каждое из них линию, считает статистику по каждой линии, записывает
+ее в соответствующий файл, который будет в папке с файлами программы"""
+n = 40
+sec.sep_section(n)
+
+"""Выводит полученный профиль на экран"""
+sec.plot_section(n)
+
+"""Все ненужные выводы сканов на экран можно отключить поставив перед соответсвуюзей строкой # чтобы она стала серой"""

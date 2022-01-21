@@ -16,6 +16,12 @@ class Scan:
 
         # self.__calc_scan_metrics()
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
     def __iter__(self):
         """Возвращает итератор последовательно выдающий объеты Point для всех точек скана"""
         return iter(ScanIterator(self))

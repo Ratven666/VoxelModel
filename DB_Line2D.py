@@ -22,7 +22,7 @@ class Line2D:
     @classmethod
     def fit_line_to_2d_scan(cls, scan: Scan):
         aa, ab, bb, al, bl = 0, 0, 0, 0, 0
-        for point in scan.points:
+        for point in scan:
             x, y = point.x, point.y
             aa += x ** 2
             ab += x

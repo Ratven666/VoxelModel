@@ -10,6 +10,8 @@ class Section:
         self.scan = scan
         self.strip_scan = StripScan.cut_scan(line2D, width, scan)
         self.section_2d_scan = self.__calk_2d_projection()
+        self.sec_scans = {}
+        self.line_list = {}
 
     def __len__(self):
         return len(self.section_2d_scan)
@@ -49,6 +51,81 @@ class Section:
         temp_scan.parse_points_from_file(file_name)
         remove(file_name)
         return temp_scan
+
+    def sep_section(self, n: int):
+        if n not in self.sec_scans:
+            self.sec_scans[n] = [Scan(Project(""), f"SC_sec_w{self.width}_n{n}_{idx}") for idx in range(n)]
+            scans_id = [scan.scan_id for scan in self.sec_scans[n]]
+            step_line = self.line2D.line_dist() / n
+            data = []
+            for point in self.section_2d_scan:
+                sec_idx_X = int(point.x // step_line)
+                try:
+                    data.append((point.point_id, scans_id[sec_idx_X]))
+                except IndexError:
+                    pass
+            with Project("") as project:
+                project.executemany("INSERT OR IGNORE INTO points_scans (point_id, scan_id) VALUES (?, ?)", data)
+            [scan.calc_scan_metrics() for scan in self.sec_scans[n]]
+            [scan.update_scan_metrics_in_db() for scan in self.sec_scans[n]]
+            self.__fit_lines_in_sections(n)
+            self.__calc_lines_statistics(n)
+
+    def __fit_lines_in_sections(self, n):
+        self.line_list[n] = [Line2D.fit_line_to_2d_scan(scan) for scan in self.sec_scans[n]]
+
+    def __calc_lines_statistics(self, n):
+        vv = 0
+        vv_line = 0
+        data = f"№\tk\tb\tPoints_count\tMSE\tMSE_line\tR2\n"
+        for idx, scan in enumerate(self.sec_scans[n]):
+            with Project("") as project:
+                y_avg = project. execute("""SELECT AVG(p.Y) 
+                            FROM points p
+                            JOIN points_scans ps ON ps.point_id = p.id
+                            WHERE ps.scan_id = (?)""", (scan.scan_id,)).fetchone()[0]
+            line = self.line_list[n][idx]
+            for point in scan:
+                y_line = -line.parameters["A"] * point.x - line.parameters["C"]
+                vv += (point.y - y_avg) ** 2
+                vv_line += (point.y - y_line) ** 2
+            mse = (vv / (len(scan) - 1)) ** 0.5
+            mse_line = (vv_line / (len(scan) - 2)) ** 0.5
+            R2 = 1 - (mse_line ** 2) / (mse **2)
+            data += f"{idx+1}\t{round(-line.parameters['A'], 5)}\t{round(-line.parameters['C'], 5)}\t" \
+                    f"{len(scan)}\t{round(mse, 5)}\t{round(mse_line, 5)}\t{round(R2, 5)}\n"
+        with open(f"LineStat_{self.scan.__str__()}_width{self.width}_n{n}.txt", "w") as file:
+            file.write(data)
+
+    def plot_section(self, n, true_scale=True):
+        x_st = 0
+        ax = plt.axes()
+        ax.set_xlabel('line')  # !!!!!!!!!!!!!!!!
+        ax.set_ylabel('z')
+        if true_scale is True:
+            self.__plot_limits(ax)
+        step_line = self.line2D.line_dist() / n
+        for idx, scan in enumerate(self.sec_scans[n]):
+            x_lst, y_lst, c_lst = [], [], []
+            for point in scan:
+                x_lst.append(point.x)
+                y_lst.append(point.y)
+
+                if point.color == (None, None, None):
+                    c_lst.append((0, 0, 0))
+                else:
+                    c_lst.append([el / 255.0 for el in point.color])
+
+            ax.scatter(x_lst, y_lst, c=c_lst, marker=".", s=0.5, alpha=0.1)
+            if self.line_list[n][idx] is not None:
+                line = self.line_list[n][idx]
+                x_ed = x_st + step_line
+                y_st = -line.parameters["A"] * x_st - line.parameters["C"]
+                y_ed = -line.parameters["A"] * x_ed - line.parameters["C"]
+                ax.plot([x_st, x_ed], [y_st, y_ed])
+            x_st = x_ed
+        ax.grid(True)
+        plt.show()
 
     def plot(self, max_point_count=10_000, true_scale=True):
         x_lst, y_lst, c_lst = [], [], []
