@@ -74,14 +74,21 @@ class Plane:
         if self.__check_scan(scan) and force_fit is False:
             return
 
-        if len(scan) < 3:
+        xyz_rgb = np.array([[point.x, point.y, point.z,
+                             point.color[0], point.color[1], point.color[2]] for point in scan])
+        self.fit_plane_to_np_xyz_rgb(xyz_rgb)
+        return None
+
+    def fit_plane_to_np_xyz_rgb(self, np_xyz_rgb, force_fit):
+        if len(np_xyz_rgb) == self.len and force_fit is False:
             return None
 
-        xyz_rgb = np.array([[point.x, point.y, point.z,
-                         point.color[0], point.color[1], point.color[2]] for point in scan])
+        if len(np_xyz_rgb) < 3:
+            return None
+
         a1, b1, c1, d1, b2, c2, c3, d1, d2, d3 = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         r, g, b = 0, 0, 0
-        for point in xyz_rgb:
+        for point in np_xyz_rgb:
             a1 += point[0] ** 2
             b1 += point[0] * point[1]
             c1 += point[0]
@@ -100,12 +107,12 @@ class Plane:
             abc = np.linalg.solve(mA, mD)
         except np.linalg.LinAlgError:
             return None
-        self.len = len(scan)
+        self.len = len(np_xyz_rgb)
         self.a = float(abc[0])
         self.b = float(abc[1])
         self.c = -1.0
         self.d = float(abc[2])
-        self.color = (round(r/len(scan)), round(g/len(scan)), round(b/len(scan)))
+        self.color = (round(r/len(np_xyz_rgb)), round(g/len(np_xyz_rgb)), round(b/len(np_xyz_rgb)))
         self.__update_plane_data_in_db()
         return None
 

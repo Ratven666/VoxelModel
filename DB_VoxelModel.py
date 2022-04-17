@@ -112,7 +112,16 @@ class VoxelModel:
 
     def fit_planes_in_vxl(self, force_fit=False):
         for voxel in self:
-            voxel.plane.fit_plane_to_scan(voxel.scan, force_fit)
+            if len(voxel.scan) == voxel.plane.len and force_fit is False:
+                if voxel.avg_z is not None and voxel.mse_z is not None and \
+                        voxel.mse_plane is not None and force_fit is False:
+                    continue
+
+            xyz_rgb = np.array([[point.x, point.y, point.z,
+                                 point.color[0], point.color[1], point.color[2]] for point in voxel.scan])
+
+            voxel.plane.fit_plane_to_np_xyz_rgb(xyz_rgb, force_fit)
+            voxel._calk_mse_from_np_xyz_rgb(xyz_rgb, force_fit)
 
     def plot(self, true_scale=True, alpha=0.6):
         fig = plt.figure()
@@ -265,7 +274,7 @@ if __name__ == "__main__":
     # t0 = time.time()
 
     # vm = VoxelModel(sc1, 2.5)
-    vm = VoxelModel(sc1, 2)
+    vm = VoxelModel(sc1, 5)
 
     # print(time.time() - t0)
     # t0 = time.time()
