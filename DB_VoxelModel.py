@@ -114,7 +114,7 @@ class VoxelModel:
         for voxel in self:
             voxel.plane.fit_plane_to_scan(voxel.scan, force_fit)
 
-    def plot(self, true_scale=True):
+    def plot(self, true_scale=True, alpha=0.6):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
@@ -141,7 +141,12 @@ class VoxelModel:
             X, Y = np.meshgrid(X, Y)
             Z = a * X + b * Y + d
 
-            ax.plot_surface(X, Y, Z, alpha=0.6)
+            if plane.color == (None, None, None):
+                c_lst = (0, 0, 0)
+            else:
+                c_lst = [el / 255.0 for el in plane.color]
+
+            ax.plot_surface(X, Y, Z, color=c_lst, alpha=alpha)
         plt.show()
 
     def volume_calculation(self, base_lvl=0):
@@ -260,13 +265,13 @@ if __name__ == "__main__":
     # t0 = time.time()
 
     # vm = VoxelModel(sc1, 2.5)
-    vm = VoxelModel(sc1, 1)
+    vm = VoxelModel(sc1, 2)
 
     # print(time.time() - t0)
     # t0 = time.time()
     vm.fit_planes_in_vxl(force_fit=False)
     # print(time.time() - t0)
-    vm.plot(true_scale=True)
+    vm.plot(true_scale=True, alpha=1)
     #
     # t0 = time.time()
     print("vol", vm.volume_calculation(base_lvl=33))

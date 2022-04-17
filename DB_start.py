@@ -98,7 +98,10 @@ class Project(metaclass=SingletonMeta):
                                         A REAL,
                                         B REAL,
                                         C REAL,
-                                        D REAL
+                                        D REAL,
+                                        cR INTEGER DEFAULT NULL,
+                                        cG INTEGER DEFAULT NULL,
+                                        cB INTEGER DEFAULT NULL
                                         );"""
         }
 

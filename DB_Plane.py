@@ -11,6 +11,7 @@ class Plane:
         self.b = None
         self.c = None
         self.d = None
+        self.color = (None, None, None)
         self.plane_id = self.__init_plane(plane_id)
 
     def __str__(self):
@@ -28,16 +29,18 @@ class Plane:
         cursor_inn = connection.cursor()
         try:
             plane_data = cursor_inn.execute("""SELECT p.id, p.len, 
-                                                   p.A, p.B, p.C, p.D
+                                                   p.A, p.B, p.C, p.D, p.cR, p.cG, p.cB
                                                    FROM planes p WHERE p.id = (?)""", (plane_id,)).fetchone()
             if plane_data is None or len(plane_data) == 0:
-                plane_id = cursor_inn.execute("""INSERT INTO planes (len, A, B, C, D) VALUES
-                                                    (?, ?, ?, ?, ?);
-                                                    """, (self.len, self.a, self.b, self.c, self.d)).lastrowid
+                plane_id = cursor_inn.execute("""INSERT INTO planes (len, A, B, C, D, cR, cG, cB) VALUES
+                                                    (?, ?, ?, ?, ?, ?, ?, ?);
+                                                    """, (self.len, self.a, self.b, self.c, self.d,
+                                                          self.color[0], self.color[1], self.color[2])).lastrowid
             else:
                 plane_id = plane_data[0]
                 self.len = plane_data[1]
                 self.a, self.b, self.c, self.d = plane_data[2], plane_data[3], plane_data[4], plane_data[5]
+                self.color = (plane_data[6], plane_data[7], plane_data[8])
         finally:
             connection.commit()
             cursor_inn.close()
@@ -55,10 +58,12 @@ class Plane:
             cursor_inn.execute("""UPDATE planes SET
                                     len = (?),
                                     A = (?), B = (?),
-                                    C = (?), D = (?)
+                                    C = (?), D = (?),
+                                    cR = (?), cG = (?), cB = (?)
                                     WHERE id = (?)
                                     ;""", (self.len, self.a, self.b,
-                                           self.c, self.d,
+                                           self.c, self.d, self.color[0],
+                                           self.color[1], self.color[2],
                                            self.plane_id))
 
     def distance_calc(self, point: Point):
@@ -72,9 +77,11 @@ class Plane:
         if len(scan) < 3:
             return None
 
-        xyz = np.array([[point.x, point.y, point.z] for point in scan])
+        xyz_rgb = np.array([[point.x, point.y, point.z,
+                         point.color[0], point.color[1], point.color[2]] for point in scan])
         a1, b1, c1, d1, b2, c2, c3, d1, d2, d3 = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        for point in xyz:
+        r, g, b = 0, 0, 0
+        for point in xyz_rgb:
             a1 += point[0] ** 2
             b1 += point[0] * point[1]
             c1 += point[0]
@@ -84,6 +91,9 @@ class Plane:
             d1 += point[0] * point[2]
             d2 += point[1] * point[2]
             d3 += point[2]
+            r += point[3]
+            g += point[4]
+            b += point[5]
         mA = np.array([[a1, b1, c1], [b1, b2, c2], [c1, c2, c3]])
         mD = np.array([d1, d2, d3])
         try:
@@ -95,6 +105,7 @@ class Plane:
         self.b = float(abc[1])
         self.c = -1.0
         self.d = float(abc[2])
+        self.color = (round(r/len(scan)), round(g/len(scan)), round(b/len(scan)))
         self.__update_plane_data_in_db()
         return None
 
