@@ -12,6 +12,7 @@ class VoxelModel:
         self.base_scan = scan
         self.step = step
         self.borders = self.__calc_vxl_md_bord()
+        self.vxl_model = None
         self.vxl_mdl_id = self.__init_vxl_mdl()
 
     def __len__(self):
@@ -112,16 +113,20 @@ class VoxelModel:
 
     def fit_planes_in_vxl(self, force_fit=False):
         for voxel in self:
-            if len(voxel.scan) == voxel.plane.len and force_fit is False:
-                if voxel.avg_z is not None and voxel.mse_z is not None and \
+            if voxel.scan.len == 0:
+                print(f"Empty vxl:{voxel.id}")
+                continue
+            if voxel.avg_z is not None and voxel.mse_z is not None and \
                         voxel.mse_plane is not None and force_fit is False:
-                    continue
+                print(f"Ready vxl:{voxel.id} (len={voxel.scan.len})")
+                continue
 
             xyz_rgb = np.array([[point.x, point.y, point.z,
                                  point.color[0], point.color[1], point.color[2]] for point in voxel.scan])
 
             voxel.plane.fit_plane_to_np_xyz_rgb(xyz_rgb, force_fit)
             voxel._calk_mse_from_np_xyz_rgb(xyz_rgb, force_fit)
+            print(f"\tCalk vxl:{voxel.id} (len={len(xyz_rgb)})")
 
     def plot(self, true_scale=True, alpha=0.6):
         fig = plt.figure()
@@ -158,12 +163,129 @@ class VoxelModel:
             ax.plot_surface(X, Y, Z, color=c_lst, alpha=alpha)
         plt.show()
 
+    def plot_3d_dem(self, true_scale=True, alpha=0.6):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        if true_scale is True:
+            self.base_scan._Scan__plot_limits(ax)
+
+        for voxel in self:
+            plane = voxel.plane
+            if plane.is_calculated() is False:
+                continue
+
+            if voxel.avg_z is None:
+                continue
+
+            x0 = voxel.vxl_borders["lower_left"].x
+            y0 = voxel.vxl_borders["lower_left"].y
+            step = voxel.step
+            x_max = voxel.vxl_borders["upper_right"].x + step
+            y_max = voxel.vxl_borders["upper_right"].y + step
+
+            X = np.arange(x0, x_max, step)
+            Y = np.arange(y0, y_max, step)
+            X, Y = np.meshgrid(X, Y)
+            Z = 0 * X + 0 * Y + voxel.avg_z
+
+            if plane.color == (None, None, None):
+                c_lst = (0, 0, 0)
+            else:
+                c_lst = [el / 255.0 for el in plane.color]
+
+            ax.plot_surface(X, Y, Z, color=c_lst, alpha=alpha)
+        plt.show()
+
+    def plot_2d_map(self, name="mse_plane", print_legend=True, border_val=(0, 1)):
+        x_list = []
+        y_list = []
+
+        for vxl_x_line in self.vxl_model[0]:
+            x = (vxl_x_line.vxl_borders["lower_left"].x + vxl_x_line.vxl_borders["lower_right"].x) / 2
+            x_list.append(x)
+        for vxl_y_line in self.vxl_model:
+            y = (vxl_y_line[0].vxl_borders["lower_left"].y + vxl_y_line[0].vxl_borders["upper_left"].y) / 2
+            y_list.append(y)
+        err = []
+        for x in self.vxl_model:
+            y_line = []
+            for y in x:
+                if name == "mse_plane":
+                    e = y.mse_plane
+                    e = self.__filtered_mse(y.mse_plane, border_val)
+                elif name == "mse_dem":
+                    # e = y.mse_z
+                    e = self.__filtered_mse(y.mse_z, border_val)
+                elif name == "len":
+                    # e = y.scan.len
+                    e = y.scan.len
+                    e = self.__filtered_mse(y.scan.len, border_val)
+                elif name == "R^2":
+                    # e = y.calk_r2()
+                    e = e = self.__filtered_mse(y.calk_r2(), border_val)
+                elif name == "2d_dem":
+                    # e = y.avg_z
+                    e = self.__filtered_mse(y.avg_z, border_val)
+                else:
+                    raise ValueError("Нет такого типа данных!")
+                if e is None:
+                    e = 0.0
+                y_line.append(e)
+            err.append(y_line[:])
+        err = np.array(err[::-1])
+
+        fig, ax = plt.subplots()
+        # im = ax.imshow(err, cmap="rainbow")
+        im = ax.imshow(err, cmap="jet")
+
+        cbar = ax.figure.colorbar(im, ax=ax)
+        # cbar.ax.set_ylabel(f"Errors from {name}", rotation=-90, va="bottom")
+        cbar.ax.set_ylabel(f"Map of {name} from {self.name}", rotation=-90, va="bottom")
+
+
+        # We want to show all ticks...
+        ax.set_xticks(np.arange(len(x_list)))
+        ax.set_yticks(np.arange(len(y_list)))
+        # ... and label them with the respective list entries
+        ax.set_xticklabels(x_list[::])
+        ax.set_yticklabels(y_list[::-1])
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                 rotation_mode="anchor")
+
+        # Loop over data dimensions and create text annotations.
+        if print_legend is True:
+            for i in range(len(y_list)):
+                for j in range(len(x_list)):
+                    text = ax.text(j, i, round(err[i, j], 3),
+                                   ha="center", va="center", color="w", fontsize="xx-small")
+
+                # fontsize or size	float or {'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'}
+
+        ax.set_title(f"Map of {name} from {self.name}")
+        fig.tight_layout()
+        plt.show()
+
+    def __filtered_mse(self, value, border_val=100_000):
+        try:
+            if value is None:
+                value = 0
+            if value > border_val[1]:
+                return border_val[1]
+            elif value < border_val[0]:
+                return border_val[0]
+            else:
+                return value
+        except:
+            return value
+
     def volume_calculation(self, base_lvl=0):
         total_volume = 0
         for voxel in self:
             total_volume += voxel.vxl_volume(base_lvl)
         return total_volume
-
 
     # def __separate_scan_to_vxl(self):
     #     x_start = self.borders["min_X"]
@@ -237,7 +359,6 @@ class VoxelModel:
     #             vxl.update_vxl_z_borders()
     #             vxl.errors = ErrorsUtils(vxl)
 
-
 class VoxelModelIterator:
 
     def __init__(self, vxl_mdl: VoxelModel):
@@ -262,27 +383,93 @@ class VoxelModelIterator:
 
 if __name__ == "__main__":
     import time
-    pr = Project("Kucha")
+    pr = Project("Balakovo")
     # t0 = time.time()
-    sc1 = Scan(pr, "Kucha")
+    sc1 = Scan(pr, "Balakovo")
     # print(time.time() - t0)
     # t0 = time.time()
-    sc1.parse_points_from_file(os.path.join("src", "KuchaRGB.txt"))
+    sc1.parse_points_from_file(os.path.join("src", "Balakovo.txt"))
     #
     # sc1.plot()
     # print(time.time() - t0)
     # t0 = time.time()
 
     # vm = VoxelModel(sc1, 2.5)
-    vm = VoxelModel(sc1, 5)
-
-    # print(time.time() - t0)
-    # t0 = time.time()
-    vm.fit_planes_in_vxl(force_fit=False)
-    # print(time.time() - t0)
-    vm.plot(true_scale=True, alpha=1)
+    # vm = VoxelModel(sc1, 25)
     #
+    # # print(time.time() - t0)
+    # # t0 = time.time()
+    # vm.fit_planes_in_vxl(force_fit=False)
+    # # print(time.time() - t0)
+
+
+
+    # vm = VoxelModel(sc1, 50)
+    # # vm.fit_planes_in_vxl(force_fit=False)
+    # vm.plot(true_scale=True, alpha=1)
+    # vm.plot_3d_dem(true_scale=True, alpha=1)
+    #
+    # vm.plot_2d_map("2d_dem", print_legend=False, border_val=(20, 150))
+    # vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 2))
+    # vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 5))
+    # vm.plot_2d_map("len", print_legend=False, border_val=(20_000, 70_000))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0.3, 0.7))
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!25!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    # vm = VoxelModel(sc1, 25)
+    # # vm.fit_planes_in_vxl(force_fit=False)
+    # vm.plot(true_scale=True, alpha=1)
+    # vm.plot_3d_dem(true_scale=True, alpha=1)
+    #
+    # vm.plot_2d_map("2d_dem", print_legend=False, border_val=(20, 150))
+    # vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 2))
+    # vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 5))
+    # vm.plot_2d_map("len", print_legend=False, border_val=(20_000, 70_000))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0.3, 0.7))
+
+
+
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 10 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    vm = VoxelModel(sc1, 10)
+    # vm.fit_planes_in_vxl(force_fit=False)
+    vm.plot(true_scale=True, alpha=1)
+    vm.plot_3d_dem(true_scale=True, alpha=1)
+    vm.plot_2d_map("2d_dem", print_legend=False, border_val=(20, 150))
+    vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 0.6))
+    vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 3))
+    vm.plot_2d_map("len", print_legend=False, border_val=(5_000, 15_000))
+    vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+    vm.plot_2d_map("R^2", print_legend=False, border_val=(0.3, 0.7))
+
     # t0 = time.time()
-    print("vol", vm.volume_calculation(base_lvl=33))
+    # print("vol", vm.volume_calculation(base_lvl=33))
     # print(time.time() - t0)
     # # sc1.plot()
+
+    # vm = VoxelModel(sc1, 25)
+    # # vm.fit_planes_in_vxl(force_fit=False)
+    # vm.plot(true_scale=True, alpha=1)
+    # vm.plot_3d_dem(true_scale=True, alpha=1)
+    #
+    # vm.plot_2d_map("2d_dem", print_legend=False, border_val=(20, 150))
+    # vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 2))
+    # vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 5))
+    # vm.plot_2d_map("len", print_legend=False, border_val=(20_000, 70_000))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0.3, 0.7))
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 10 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # vm = VoxelModel(sc1, 10)
+    # # vm.fit_planes_in_vxl(force_fit=False)
+    # vm.plot(true_scale=True, alpha=1)
+    # vm.plot_3d_dem(true_scale=True, alpha=1)
+    # vm.plot_2d_map("2d_dem", print_legend=False, border_val=(20, 150))
+    # vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 0.6))
+    # vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 3))
+    # vm.plot_2d_map("len", print_legend=False, border_val=(5_000, 15_000))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+    # vm.plot_2d_map("R^2", print_legend=False, border_val=(0.3, 0.7))

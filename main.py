@@ -1,24 +1,27 @@
-from scanprocessing.utils.ScanUtils import *
-from scanprocessing.classes.VoxelModel import *
-
-p1 = Point(1.2, 2.2, 3.4)
-p2 = Point(2, 4, 5)
-scan1 = Scan("15_yash")
+from DB_VoxelModel import *
 
 
-# ScanUtils.parse_xyz_points_from_file(scan1, "src\\15.txt")
-#
-# ScanUtils.dump_scan(scan1)
-
-scan2 = ScanUtils.load_scan("saved_scan\\15_yash.pkl_scan")
-
-print(scan2)
+pr = Project("Kucha_2")
+sc1 = Scan(pr, "Kucha_2")
+sc1.parse_points_from_file("src\Kucha_2.txt")
 
 
+# sc1.plot(max_point_count=50_000)
 
-# ScanUtils.plot_scan(scan2)
 
-vxl_md = VoxelModel(scan2)
+vm = VoxelModel(sc1, 1)
+vm.fit_planes_in_vxl(force_fit=False)
 
-print(vxl_md)
-print(len(vxl_md))
+# for vxl in vm:
+#     if vxl.mse_plane is not None:
+#         print(vxl.id, vxl.mse_z, vxl.mse_plane)
+
+
+# vm.plot(true_scale=True, alpha=1)
+vm.plot_3d_dem(true_scale=True, alpha=1)
+vm.plot_2d_map("mse_plane", print_legend=False, border_val=(0, 0.5))
+vm.plot_2d_map("mse_dem", print_legend=False, border_val=(0, 0.8))
+vm.plot_2d_map("len", print_legend=False, border_val=(0, 900))
+vm.plot_2d_map("R^2", print_legend=False, border_val=(0, 1))
+print()
+

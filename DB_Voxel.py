@@ -92,16 +92,22 @@ class Voxel:
         sum_of_plane_vv = 0
         for point in np_xyz_rgb:
             x, y, z = point[0], point[1], point[2]
-            z_plane = plane.a * x + plane.b * y + plane.d
-
             sum_of_z_vv += (z - self.avg_z) ** 2
-            sum_of_plane_vv += (z - z_plane) ** 2
+            try:
+                z_plane = plane.a * x + plane.b * y + plane.d
+                sum_of_plane_vv += (z - z_plane) ** 2
+            except TypeError:
+                print(z, y, z)
+                print(plane)
+                print(sum_of_plane_vv)
         try:
             self.mse_z = round((sum_of_z_vv / (len(np_xyz_rgb) - 1)) ** 0.5, 5)
             self.mse_plane = round((sum_of_plane_vv / (len(np_xyz_rgb) - 1)) ** 0.5, 5)
         except ZeroDivisionError:
             self.mse_z = None
             self.mse_plane = None
+        except:
+            print("Не понятное исключение")
 
         self.__update_voxel_data_in_db()
         return None
@@ -150,6 +156,16 @@ class Voxel:
             points.append([x, y, z])
             points.append([x, y, base_lvl])
         return ConvexHull(points).volume
+
+    def calk_r2(self):
+        try:
+            r2 = 1 - (self.mse_plane ** 2) / (self.mse_z ** 2)
+            if r2 > 0:
+                return r2
+            else:
+                return 0.0
+        except:
+            return 0.0
 
 
 if __name__ == "__main__":
